@@ -190,7 +190,8 @@
                             style="margin-bottom:30px; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 12px;">
                             <h3
                                 style="margin-bottom:10px; color:var(--primary-teal); display:flex; align-items:center; gap:8px;">
-                                <i data-lucide="gauge"></i> Simulator Tuning</h3>
+                                <i data-lucide="gauge"></i> Simulator Tuning
+                            </h3>
                             <p style="color:var(--text-secondary); margin-bottom:16px; font-size:14px;">Adjust the
                                 physical speed multiplier of the ambulance markers on the GPS map.</p>
                             <input type="range" id="simSpeedSlider" min="1" max="10" value="5" style="width:100%;">
@@ -199,14 +200,16 @@
                             style="margin-bottom:30px; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 12px;">
                             <h3
                                 style="margin-bottom:10px; color:var(--primary-teal); display:flex; align-items:center; gap:8px;">
-                                <i data-lucide="moon"></i> UI Theme Contrast</h3>
+                                <i data-lucide="moon"></i> UI Theme Contrast
+                            </h3>
                             <button id="btnToggleContrast" class="btn-primary" style="width: auto;">Toggle High Contrast
                                 Dark Mode</button>
                         </div>
                         <div style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 12px;">
                             <h3
                                 style="margin-bottom:10px; color:var(--primary-teal); display:flex; align-items:center; gap:8px;">
-                                <i data-lucide="server"></i> Satellite Uplink Integrity</h3>
+                                <i data-lucide="server"></i> Satellite Uplink Integrity
+                            </h3>
                             <div
                                 style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
                                 <span style="color:var(--text-secondary); font-size:14px;">API Connection
@@ -227,41 +230,56 @@
     </div>
 
     <!-- AI Chatbot Widget -->
-    <div id="ai-chat-widget" class="hidden glass-panel" style="position: fixed; bottom: 80px; right: 20px; width: 350px; height: 450px; z-index: 1000; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--accent-red);">
-        <div style="background: rgba(239, 68, 68, 0.2); padding: 16px; border-bottom: 1px solid var(--accent-red); display: flex; justify-content: space-between; align-items: center;">
+    <div id="ai-chat-widget" class="hidden glass-panel"
+        style="position: fixed; bottom: 80px; right: 20px; width: 350px; height: 450px; z-index: 1000; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--accent-red);">
+        <div
+            style="background: rgba(239, 68, 68, 0.2); padding: 16px; border-bottom: 1px solid var(--accent-red); display: flex; justify-content: space-between; align-items: center;">
             <h3 style="margin: 0; font-size: 16px; color: white; display: flex; align-items: center; gap: 8px;">
                 <i data-lucide="bot"></i> Emergency AI Agent
             </h3>
             <div style="display: flex; gap: 12px; align-items: center;">
-                <button id="chat-speak-toggle" style="background:none; border:none; color: white; cursor:pointer;" title="Toggle AI Voice"><i data-lucide="volume-2" id="speak-icon"></i></button>
-                <button onclick="document.getElementById('ai-chat-widget').classList.add('hidden')" style="background:none; border:none; color:white; cursor:pointer;"><i data-lucide="x"></i></button>
+                <button id="chat-speak-toggle" style="background:none; border:none; color: white; cursor:pointer;"
+                    title="Toggle AI Voice"><i data-lucide="volume-2" id="speak-icon"></i></button>
+                <button onclick="document.getElementById('ai-chat-widget').classList.add('hidden')"
+                    style="background:none; border:none; color:white; cursor:pointer;"><i data-lucide="x"></i></button>
             </div>
         </div>
-        <div id="chat-messages" style="flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+        <div id="chat-messages"
+            style="flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
             <!-- Messages injected here -->
         </div>
-        <div style="padding: 12px; border-top: 1px solid var(--border-color); display: flex; gap: 8px; background: rgba(0,0,0,0.4); align-items: center;">
-            <button id="chat-mic" class="btn-primary" style="padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.1); border: 1px solid var(--border-color); cursor: pointer; color: white;" title="Hold to speak"><i data-lucide="mic" style="width:16px;height:16px;"></i></button>
-            <input type="text" id="chat-input" placeholder="Type medical emergency..." style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.05); color: white; outline: none;">
-            <button id="chat-send" class="btn-primary" style="padding: 10px 16px; border-radius: 8px; background: var(--accent-red); border: none; cursor: pointer; color: white;"><i data-lucide="send" style="width:16px;height:16px;"></i></button>
+        <div
+            style="padding: 12px; border-top: 1px solid var(--border-color); display: flex; gap: 8px; background: rgba(0,0,0,0.4); align-items: center;">
+            <button id="chat-mic" class="btn-primary"
+                style="padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.1); border: 1px solid var(--border-color); cursor: pointer; color: white;"
+                title="Hold to speak"><i data-lucide="mic" style="width:16px;height:16px;"></i></button>
+            <input type="text" id="chat-input" placeholder="Type medical emergency..."
+                style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.05); color: white; outline: none;">
+            <button id="chat-send" class="btn-primary"
+                style="padding: 10px 16px; border-radius: 8px; background: var(--accent-red); border: none; cursor: pointer; color: white;"><i
+                    data-lucide="send" style="width:16px;height:16px;"></i></button>
         </div>
     </div>
 
     <!-- Hospital Selection Widget (User Mode) -->
-    <div id="hospital-selection-widget" class="hidden glass-panel" style="position: fixed; top: 90px; left: 20px; width: 350px; z-index: 1000; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--primary-teal);">
+    <div id="hospital-selection-widget" class="hidden glass-panel"
+        style="position: fixed; top: 90px; left: 20px; width: 350px; z-index: 1000; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--primary-teal);">
         <div style="background: rgba(20, 184, 166, 0.2); padding: 16px; border-bottom: 1px solid var(--primary-teal);">
             <h3 style="margin: 0; font-size: 16px; color: white; display: flex; align-items: center; gap: 8px;">
                 <i data-lucide="navigation"></i> Choose Nearest Hospital
             </h3>
-            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Click a facility to generate physical driving routes.</p>
+            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Click a facility to generate
+                physical driving routes.</p>
         </div>
-        <div id="hospital-options-list" style="padding: 16px; display: flex; flex-direction: column; gap: 12px; max-height: 400px; overflow-y: auto;">
+        <div id="hospital-options-list"
+            style="padding: 16px; display: flex; flex-direction: column; gap: 12px; max-height: 400px; overflow-y: auto;">
             <!-- Options dynamically injected -->
         </div>
     </div>
 
     <!-- Exit User Mode Button -->
-    <button id="btn-exit-user-mode" class="hidden glass-panel" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--accent-red); padding: 12px 24px; border-radius: 50px; font-size: 16px; font-weight: bold; z-index: 2000; cursor: pointer; color: white; display: flex; align-items: center; gap: 8px; box-shadow: 0 0 20px rgba(239, 68, 68, 0.5); border: 2px solid white;">
+    <button id="btn-exit-user-mode" class="hidden glass-panel"
+        style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--accent-red); padding: 12px 24px; border-radius: 50px; font-size: 16px; font-weight: bold; z-index: 2000; cursor: pointer; color: white; display: flex; align-items: center; gap: 8px; box-shadow: 0 0 20px rgba(239, 68, 68, 0.5); border: 2px solid white;">
         <i data-lucide="x-circle"></i> Exit User Mode
     </button>
 

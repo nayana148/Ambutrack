@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Fetch Initial Data from our Backend Server
         try {
             console.log("Fetching mock data from Backend API...");
-            const beRes = await fetch(`http://localhost:5000/api/initial-data?lat=${lat}&lng=${lng}`);
+            const beRes = await fetch(`http://127.0.0.1:3001/api/initial-data?lat=${lat}&lng=${lng}`);
             const beData = await beRes.json();
             
             AppState.incidents = beData.incidents;
@@ -75,9 +75,16 @@ document.addEventListener('DOMContentLoaded', () => {
             // 2. Fetch REAL Hospitals from Overpass API (Radius 5000m)
             try {
                 console.log("Fetching real hospitals from Overpass API...");
-                const query = `[out:json];node(around:8000,${lat},${lng})[amenity=hospital];out 10;`;
+                const query = `[out:json][timeout:5];node(around:8000,${lat},${lng})[amenity=hospital];out 10;`;
                 const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
-                const res = await fetch(url);
+                
+                // Hard 4-second timeout to prevent the app from freezing on startup
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 4000);
+                
+                const res = await fetch(url, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                
                 const data = await res.json();
 
                 if (data.elements && data.elements.length > 0) {
@@ -283,10 +290,39 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.routes && data.routes.length > 0) {
                 // Convert coordinates [lng, lat] to {lat, lng} array for our consumption engine
                 amb.routePath = data.routes[0].geometry.coordinates.map(c => ({ lat: c[1], lng: c[0] }));
+                
+                // Remove previous layer if re-assigned mid-route
+                if (amb.routeLayer) AppState.map.removeLayer(amb.routeLayer);
+                
+                // Visually Draw the actual route line for this specific ambulance
+                amb.routeLayer = L.polyline(data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]), {
+                     color: '#ef4444', // Red for ambulances
+                     opacity: 0.6,
+                     weight: 4,
+                     dashArray: '5, 5'
+                }).addTo(AppState.map);
             }
         } catch (error) {
             console.error("OSRM background fetch failed:", error);
-            amb.routePath = undefined;
+            
+            // Offline Geometric Fallback (City Block "Manhattan" Routing) to bypass API rate limits
+            if (amb.routeLayer) AppState.map.removeLayer(amb.routeLayer);
+            
+            let cornerLat = endLoc[0];
+            let cornerLng = startLoc[1];
+            
+            amb.routePath = [
+                { lat: startLoc[0], lng: startLoc[1] },
+                { lat: cornerLat,   lng: cornerLng },
+                { lat: endLoc[0],   lng: endLoc[1] }
+            ];
+            
+            amb.routeLayer = L.polyline([startLoc, [cornerLat, cornerLng], endLoc], {
+                 color: '#ef4444', 
+                 opacity: 0.6,
+                 weight: 4,
+                 dashArray: '5, 5'
+            }).addTo(AppState.map);
         }
     }
 
@@ -347,6 +383,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (amb.routePath.length === 0) { 
                         // Route geometry exhausted, fallback to final point
                         amb.routePath = undefined;
+                        if (amb.routeLayer) {
+                            AppState.map.removeLayer(amb.routeLayer);
+                            amb.routeLayer = null;
+                        }
                     }
                 } else if (amb.routePath === undefined) {
                     // Fallback mathematically while OSRM API is still fetching
@@ -360,6 +400,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (Math.abs(newLoc[0] - targetLoc[0]) < 0.0001 && Math.abs(newLoc[1] - targetLoc[1]) < 0.0001) {
                         amb.status = "On Scene";
                         amb.speed = "0 mph";
+                        
+                        if (amb.routeLayer) {
+                            AppState.map.removeLayer(amb.routeLayer);
+                            amb.routeLayer = null;
+                        }
+                        
                         if (AppState.trackedAmbulanceRouteLine) {
                             AppState.map.removeControl(AppState.trackedAmbulanceRouteLine);
                             AppState.trackedAmbulanceRouteLine = null;
@@ -651,15 +697,15 @@ document.addEventListener('DOMContentLoaded', () => {
         msgs.scrollTop = msgs.scrollHeight;
 
         try {
-            const res = await fetch('http://localhost:5000/api/chat', {
+            const res = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     message: text,
                     context: {
                         incidents: AppState.incidents,
-                        ambulances: AppState.ambulances,
-                        hospitals: AppState.hospitals
+                        ambulances: AppState.ambulances.map(a => ({ id: a.id, unit: a.unit, status: a.status, loc: a.loc, speed: a.speed })),
+                        hospitals: AppState.hospitals.map(h => ({ id: h.id, name: h.name, capacity: h.capacity, max: h.max }))
                     }
                 })
             });
@@ -682,12 +728,30 @@ document.addEventListener('DOMContentLoaded', () => {
     let aiVoiceEnabled = true;
 
     function speakText(text) {
-        if (!aiVoiceEnabled || !('speechSynthesis' in window)) return;
-        // Strip out HTML tags for clean speech
+        if (!aiVoiceEnabled) return;
         const cleanText = text.replace(/<[^>]*>?/gm, '');
+        
+        // Windows/Chrome usually lacks native Kannada voice packs and fails silently. 
+        // We bypass the browser entirely and stream Kannada audio directly from Google Cloud Synthesizer!
+        if (/[\u0C80-\u0CFF]/.test(cleanText)) {
+            const url = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=kn&client=tw-ob&q=' + encodeURIComponent(cleanText);
+            const audio = new Audio(url);
+            audio.play().catch(e => console.error("Cloud TTS Playback failed:", e));
+            return; // Terminate early so we don't trigger the local browser engine
+        }
+
+        // Standard Local Engine for English & Hindi
+        if (!('speechSynthesis' in window)) return;
         const msg = new SpeechSynthesisUtterance(cleanText);
         msg.rate = 1.0;
         msg.pitch = 1.0;
+        
+        if (/[\u0900-\u097F]/.test(cleanText)) {
+            msg.lang = 'hi-IN'; // Hindi Voice
+        } else {
+            msg.lang = 'en-US'; // Default English
+        }
+
         window.speechSynthesis.speak(msg);
     }
     

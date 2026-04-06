@@ -1,17 +1,22 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { Groq } = require('groq-sdk');
 
 // Check for API key early
-const genAI = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
+const groq = process.env.GROQ_API_KEY ? new Groq({ apiKey: process.env.GROQ_API_KEY }) : null;
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3001;
+
+const path = require('path');
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Serve the Frontend directory locally from within the Backend Web Server
+app.use(express.static(path.join(__dirname, '../frontend')));
 
 // Basic Route
 app.get('/', (req, res) => {
@@ -68,18 +73,14 @@ app.get('/api/initial-data', (req, res) => {
 
 app.post('/api/chat', async (req, res) => {
     try {
-        if (!genAI || process.env.GEMINI_API_KEY === 'YOUR_API_KEY_HERE') {
-            return res.json({ reply: "<b>API Key Missing:</b> Please add your GEMINI_API_KEY to the backend/.env file and restart the server." });
+        if (!groq || process.env.GROQ_API_KEY === 'YOUR_API_KEY_HERE') {
+            return res.json({ reply: "<b>API Key Missing:</b> Please add your GROQ_API_KEY to the backend/.env file and restart the server." });
         }
 
         const { message, context } = req.body;
         
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-        
         // Build a prompt that includes the state context
         const prompt = `
-You are an intelligent emergency medical dispatcher and first-aid assistant AI for an app called Ambutrack.
-The user is currently simulating or managing live emergencies.
 Here is the live situation context from the simulation:
 - Active Incidents: ${JSON.stringify(context.incidents)}
 - Available/Dispatched Ambulances: ${JSON.stringify(context.ambulances)}
@@ -87,16 +88,32 @@ Here is the live situation context from the simulation:
 
 The user communicates over radio/chat: "${message}"
 
-Respond concisely and professionally in less than 3 sentences. You may use simple HTML tags like <b> for emphasis. Give direct first aid instructions if they mention a medical symptom (like bleeding, burn, CPR), OR reference the live context if they ask about the status of ambulances, incidents, or hospitals.
+Respond concisely in less than 3 sentences. Give direct first aid instructions based on their message, OR tell them about the closest ambulances/hospitals using the live context. You may use simple HTML tags like <b> for emphasis. 
+Remember to translate all your output into the user's detected language!
         `;
 
-        const result = await model.generateContent(prompt);
-        const replyText = result.response.text();
+        const chatCompletion = await groq.chat.completions.create({
+            messages: [
+                {
+                    role: "system",
+                    content: "You are an emergency medical dispatcher. CRITICAL RULE: You MUST identify the language the user types in (e.g. Hindi, Kannada, English) and YOU MUST reply EXACTLY in that same language. Even if all context given to you is in English, you must TRANSLATE it and output your final response STRICTLY in the user's language."
+                },
+                {
+                    role: "user",
+                    content: prompt
+                }
+            ],
+            model: "llama-3.1-8b-instant",
+            temperature: 0.7,
+            max_tokens: 512,
+        });
+
+        const replyText = chatCompletion.choices[0]?.message?.content || "";
 
         res.json({ reply: replyText });
     } catch (error) {
-        console.error("Gemini API Error:", error);
-        res.json({ reply: "<b>Error:</b> Could not reach AI server. Proceed with standard protocol." });
+        console.error("Groq API Error:", error.message || error);
+        res.json({ reply: "<b>Error:</b> Could not reach Llama 3 AI engine. Proceed with standard protocol." });
     }
 });
 
